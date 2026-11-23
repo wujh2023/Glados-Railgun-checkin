@@ -583,8 +583,9 @@ class Checker:
 logger = init_logger()
 
 
-def main():
+def main() -> int:
     """主函数"""
+    glados_failed = False
     try:
         # 1. 加载配置
         logger.info(f"{LogEmoji.START} 步骤 1: 加载配置")
@@ -598,6 +599,11 @@ def main():
             logger.info(f"{LogEmoji.START} 步骤 2: 执行签到")
             checker = Checker(config)
             checker.checkin_all()
+            glados_results = [result.code for result in checker.results if result.domain == "glados.cloud"]
+            # 每份 Cookie 也会尝试另一域名，至少一个有效结果即可确认 GLaDOS 签到。
+            glados_failed = bool(glados_results) and all(
+                code == CheckinStatus.FAILURE for code in glados_results
+            )
 
             # 3. 格式化结果
             logger.info(f"{LogEmoji.START} 步骤 3: 格式化结果")
@@ -613,7 +619,11 @@ def main():
     push_service = PushService(config if "config" in locals() else "")
     push_service.send(title, content)
     logger.info(f"{LogEmoji.END} 签到完成")
+    if glados_failed:
+        logger.error("GLaDOS 签到失败，任务标记为失败。")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -46,6 +46,7 @@ jobs:
 
     # 执行 签到脚本
     - name: Running checkin
+      id: checkin
       run: |
         python checkin.py
       env:
@@ -55,9 +56,11 @@ jobs:
         GLADOS_VERBOSE: ${{ secrets.GLADOS_VERBOSE }}
 
     - name: Keep alive
+      if: ${{ !cancelled() && (success() || steps.checkin.outcome == 'failure') }}
       uses: liskin/gh-workflow-keepalive@v1 
         
     - name: Delete workflow runs
+      if: ${{ !cancelled() && (success() || steps.checkin.outcome == 'failure') }}
       uses: Mattraks/delete-workflow-runs@v2
       with:
         token: ${{ github.token }}
